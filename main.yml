@@ -11,30 +11,23 @@
     - name: Read from CSV file and return a dictionary
       delegate_to: localhost
       read_csv:
-        path: ifs_pd23compute3.csv
+        path: ifs_pd20compute4.csv
         key: var_host_name
         dialect: excel-tab  
       register: hosts
 
-    - name: Creating new dictionary with ip-gw pairs
-      set_fact:
-        ip_gw_pair: |
-          {{ ip_gw_pair | default({}) | combine(
-            {item.value.if_br_bkp_ip: item.value.if_br_bkp_gw}, 
-            {item.value.if_br_prv_ip: item.value.if_br_prv_gw},
-            {item.value.if_br_stra_ip: item.value.if_br_stra_gw},
-            {item.value.if_br_strb_ip: item.value.if_br_strb_gw},
-            {item.value.if_br_umgt_ip: item.value.if_br_umgt_gw},
-            {item.value.if_br_ustr_ip: item.value.if_br_ustr_gw},
-            ) }}
+    - set_fact:
+        dict2: '{{ item.value | dict2items | rejectattr("key", "eq", "var_host_name") | rejectattr("key", "match", ".+_mask") | list | items2dict }}'
       with_dict:
         - "{{ hosts.dict }}"
       when:
         - inventory_hostname == item.key
 
     - name: Testing the availability of gateways
+      vars: 
+        array2: "{{ dict2.values() | list }}"
       shell: "fping -S {{ item.key }} {{ item.value }}"
       with_dict:
-        - "{{ ip_gw_pair }}"
+        - "{{ dict(array2 | slice(array2 | length //2)) }}"
       when:
-        - ip_gw_pair is defined
+        - dict2 is defined

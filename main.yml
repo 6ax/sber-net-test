@@ -7,11 +7,14 @@
       apt:
         name: fping
         update_cache: yes
+      tags:
+        - never
+        - install_fping
 
     - name: Read from CSV file and return a dictionary
       delegate_to: localhost
       read_csv:
-        path: ifs_pd20compute4.csv
+        path: "{{ input_file }}"
         key: var_host_name
         dialect: excel-tab  
       register: hosts
